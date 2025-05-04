@@ -3,6 +3,12 @@
 #include "usart.h"
 #include "led.h"
 #include "lcd.h"
+#include "w25qxx.h"
+#include "usbd_msc_core.h"
+#include "usbd_usr.h"
+#include "usbd_desc.h"
+#include "usb_conf.h"
+#include "usbd_msc_bot.h"
 /************************************************
  ALIENTEK 探索者STM32F407开发板 实验13
  LCD显示实验-HAL库函数版
@@ -12,6 +18,8 @@
  广州市星翼电子科技有限公司  
  作者：正点原子 @ALIENTEK
 ************************************************/
+
+USB_OTG_CORE_HANDLE USB_OTG_dev;
 
 int main(void)
 {
@@ -23,33 +31,27 @@ int main(void)
 	delay_init(168);               	//初始化延时函数
 	uart_init(115200);             	//初始化USART
 	LED_Init();						//初始化LED	
-
+	W25QXX_Init();					//初始化W25Q128 
  	LCD_Init();           			//初始化LCD FSMC接口
-	POINT_COLOR=RED;     			//画笔颜色：红色
 	sprintf((char*)lcd_id,"LCD ID:%04X",lcddev.id);//将LCD ID打印到lcd_id数组。
+	POINT_COLOR=RED;     			//画笔颜色：红色
+	LCD_ShowString(30,40,210,24,24,"Explorer STM32F4");	
+	LCD_ShowString(30,70,200,16,16,"TFTLCD TEST");
+	LCD_ShowString(30,90,200,16,16,"ATOM@ALIENTEK");
+ 	LCD_ShowString(30,110,200,16,16,lcd_id);		//显示LCD ID	      					 
+	LCD_ShowString(30,130,200,12,12,"2025/5/4");	 
+	
+	if(W25QXX_ReadID()!=W25Q128 && W25QXX_ReadID()!=NM25Q128 && W25QXX_ReadID()!=BY25Q128)  //检测W25Q128错误
+		LCD_ShowString(30,130,200,16,16,"W25Q128 Error!");
+	else //SPI FLASH 正常
+	{   														 
+		LCD_ShowString(30,150,200,16,16,"SPI FLASH OK!");	 
+	}  
+	
+	USBD_Init(&USB_OTG_dev,USB_OTG_FS_CORE_ID,&USR_desc,&USBD_MSC_cb,&USR_cb);
+	
   	while(1) 
 	{		 
-		switch(x)
-		{
-			case 0:LCD_Clear(WHITE);break;
-			case 1:LCD_Clear(BLACK);break;
-			case 2:LCD_Clear(BLUE);break;
-			case 3:LCD_Clear(RED);break;
-			case 4:LCD_Clear(MAGENTA);break;
-			case 5:LCD_Clear(GREEN);break;
-			case 6:LCD_Clear(CYAN);break; 
-			case 7:LCD_Clear(YELLOW);break;
-			case 8:LCD_Clear(BRRED);break;
-			case 9:LCD_Clear(GRAY);break;
-			case 10:LCD_Clear(LGRAY);break;
-			case 11:LCD_Clear(BROWN);break;
-		}
-		POINT_COLOR=RED;	  
-		LCD_ShowString(30,40,210,24,24,"Explorer STM32F4");	
-		LCD_ShowString(30,70,200,16,16,"TFTLCD TEST");
-		LCD_ShowString(30,90,200,16,16,"ATOM@ALIENTEK");
- 		LCD_ShowString(30,110,200,16,16,lcd_id);		//显示LCD ID	      					 
-		LCD_ShowString(30,130,200,12,12,"2025/4/28");	      					 
 		x++;
 		if(x==12)x=0;
 		LED0=!LED0;	 
